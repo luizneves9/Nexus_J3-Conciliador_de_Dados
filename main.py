@@ -45,6 +45,9 @@ criterio_empresa = {
 
 df_corporativo['Nome_Empresa'] = df_corporativo['EMPRESA'].map(criterio_empresa)
 
+# filtrando os dados diferentes do código PCA 254 (Substituição de passagem)
+df_corporativo = df_corporativo[df_corporativo['CODIGO PCA'] != 254]
+
 ## mantendo as principais colunas do df
 
 # colunas originais
@@ -63,12 +66,13 @@ col_corporativo_original = ['EMPRESA', 'NUMERO BILHETE', 'NUMERO BPE', 'DATA HOR
        'AGENCIA EMISSORA', 'CODIGO PCA.1', 'VALOR PCA', 'QTD. PARCELAS',
        'DATA/HORA CANCELAMENTO', 'Nome_Empresa']
 
-df_corporativo = df_corporativo[['Nome_Empresa', 'NUMERO BILHETE', 'DATA HORA VENDA', 'STATUS BILHETE', 'TARIFA',
-                  'PEDAGIO', 'TAXA_EMB', 'TOTAL DO BILHETE', 'AGENCIA ORIGINAL', 'ID TRANSACAO ORIGINAL',
-                  'NOME PASSAGEIRO', 'POLTRONA', 'VALOR MULTA', 'DATA HORA VIAGEM',
-                  'DATA HORA VENDA PARA CANC.'
+# definindo as colunas essenciais
+df_corporativo = df_corporativo[['Nome_Empresa', 'STATUS BILHETE', 'DATA HORA VENDA', 'DATA HORA VENDA PARA CANC.', 'NUMERO BILHETE', 'ID TRANSACAO ORIGINAL', 'TARIFA',
+                  'PEDAGIO', 'TAXA_EMB', 'TOTAL DO BILHETE', 'VALOR MULTA', 'AGENCIA ORIGINAL', 
+                  'NOME PASSAGEIRO', 'POLTRONA', 'DATA HORA VIAGEM'
        ]]
 
+# renomeando colunas
 col_corporativo_renomear = {
     'Nome_Empresa': 'Empresa',
     'NUMERO BILHETE': 'Bilhete',
