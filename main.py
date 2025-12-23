@@ -23,8 +23,9 @@ for arquivo in caminhos_arquivos:
     print(f'Sistema: Processando o arquivo "{nome_arquivo}".')
 
     try:
-        arquivo_temporario = pd.read_csv(arquivo, sep=';', encoding='latin-1')
+        arquivo_temporario = pd.read_csv(arquivo, sep=';', decimal=',', encoding='latin-1')
         if arquivo_temporario is not None:
+            arquivo_temporario['Origem'] = nome_arquivo
             lista_arquivos.append(arquivo_temporario)
     except Exception as e:
         print(f'Aviso: Erro ao processar o arquivo "{nome_arquivo}".')
@@ -67,7 +68,7 @@ col_corporativo_original = ['EMPRESA', 'NUMERO BILHETE', 'NUMERO BPE', 'DATA HOR
        'DATA/HORA CANCELAMENTO', 'Nome_Empresa']
 
 # definindo as colunas essenciais
-df_corporativo = df_corporativo[['Nome_Empresa', 'STATUS BILHETE', 'DATA HORA VENDA', 'DATA HORA VENDA PARA CANC.', 'NUMERO BILHETE', 'ID TRANSACAO ORIGINAL', 'TARIFA',
+df_corporativo = df_corporativo[['Origem', 'Nome_Empresa', 'STATUS BILHETE', 'DATA HORA VENDA', 'DATA HORA VENDA PARA CANC.', 'NUMERO BILHETE', 'ID TRANSACAO ORIGINAL', 'TARIFA',
                   'PEDAGIO', 'TAXA_EMB', 'TOTAL DO BILHETE', 'VALOR MULTA', 'AGENCIA ORIGINAL', 
                   'NOME PASSAGEIRO', 'POLTRONA', 'DATA HORA VIAGEM'
        ]]
@@ -76,7 +77,7 @@ df_corporativo = df_corporativo[['Nome_Empresa', 'STATUS BILHETE', 'DATA HORA VE
 col_corporativo_renomear = {
     'Nome_Empresa': 'Empresa',
     'NUMERO BILHETE': 'Bilhete',
-    'DATA HORA VENDA': 'Data Lançamento',
+    'DATA HORA VENDA': 'Data Lancamento',
     'STATUS BILHETE': 'Status',
     'TARIFA': 'Tarifa',
     'PEDAGIO': 'Pedagio',
@@ -88,7 +89,65 @@ col_corporativo_renomear = {
     'POLTRONA': 'Poltrona',
     'VALOR MULTA': 'Valor Multa',
     'DATA HORA VIAGEM': 'Data Viagem',
-    'DATA HORA VENDA PARA CANC.': 'Data da Venda'
+    'DATA HORA VENDA PARA CANC.': 'Data Venda'
 }
 
-df_corporativo.rename(columns=col_corporativo_renomear)
+df_corporativo.rename(columns=col_corporativo_renomear, inplace=True)
+
+# tratando valores vazios da coluna 'Valor Multa'
+filtro_multa_null = df_corporativo['Valor Multa'].isna()
+df_corporativo.loc[filtro_multa_null, 'Valor Multa'] = 0
+
+# tratando a coluna 'Data Venda' vazia em casos de vendas
+filtro_vendas = df_corporativo['Status'] == 'V'
+df_corporativo.loc[filtro_vendas, 'Data Venda'] = df_corporativo.loc[filtro_vendas, 'Data Lancamento']
+
+## tratando datas
+
+# convertendo data de lancamento
+df_corporativo['Data Lancamento'] = pd.to_datetime(df_corporativo['Data Lancamento'], dayfirst=True, errors='coerce')
+
+# criando filtro da coluna data venda
+filtro_data_venda = df_corporativo['Data Venda'].astype(str).str.strip()
+
+# convertendo em data do formato dd/mm/yyyy hh:mm
+df_corporativo['Data Venda'] = pd.to_datetime(
+    filtro_data_venda,
+    format='%d/%m/%Y %H:%M',
+    errors='coerce'
+)
+
+# convertendo em data no formato dd/mm/yyyy hh:mm:ss
+mask_nat_1 = df_corporativo['Data Venda'].isna()
+df_corporativo.loc[mask_nat_1, 'Data Venda'] = pd.to_datetime(
+    filtro_data_venda[mask_nat_1],
+    format='%d/%m/%Y %H:%M:%S',
+    errors='coerce'
+)
+
+# convertendo em data no formato dd/mm/yyyy
+mask_nat_2 = df_corporativo['Data Venda'].isna()
+df_corporativo.loc[mask_nat_2, 'Data Venda'] = pd.to_datetime(
+    filtro_data_venda[mask_nat_2],
+    format='%d/%m/%Y',
+    errors='coerce'
+)
+
+# convertendo em data no formato dd-mm-yyyy
+mask_nat_3 = df_corporativo['Data Venda'].isna()
+df_corporativo.loc[mask_nat_3, 'Data Venda'] = pd.to_datetime(
+    filtro_data_venda[mask_nat_3],
+    format='%d-%m-%Y',
+    errors='coerce'
+)
+
+# convertendo em data no formato dd-mm-yyyy hh:mm:ss
+mask_nat_4 = df_corporativo['Data Venda'].isna()
+df_corporativo.loc[mask_nat_4, 'Data Venda'] = pd.to_datetime(
+    filtro_data_venda[mask_nat_4],
+    format='%d-%m-%Y %H:%M:%S',
+    errors='coerce'
+)
+
+# normalizando a data
+df_corporativo['Data Venda'] = df_corporativo['Data Venda'].dt.normalize()
